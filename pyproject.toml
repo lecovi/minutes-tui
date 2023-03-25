@@ -11,6 +11,7 @@ packages = [
 python = "^3.7"
 textual = "^0.16.0"
 pyxdg = "^0.28"
+sqlmodel = "^0.0.8"
 
 [tool.poetry.dev-dependencies]
 pytest = "^5.2"
