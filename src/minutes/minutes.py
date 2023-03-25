@@ -8,11 +8,11 @@ from typing import Optional
 
 from sqlmodel import Field, Session, SQLModel, create_engine, select
 from textual.app import App, ComposeResult
-from textual.containers import Horizontal, Vertical, Container, Grid
+from textual.containers import Grid, Horizontal, Vertical
 from textual.screen import Screen
 from textual.widget import Widget
-from textual.widgets import (Button, Footer, Header, Static, Input, ListItem, MarkdownViewer)
-
+from textual.widgets import (Button, Footer, Header, Input, MarkdownViewer,
+                             Static)
 from xdg.BaseDirectory import save_data_path
 
 
@@ -73,7 +73,7 @@ class MinuteListItem(Widget):
     def compose(self) -> ComposeResult:
         item_text = f"[b]{self.minute.title}[/b] [@click=minute_view({self.minute.id})]:mag:[/] [@click=minute_edit({self.minute.id})]:pencil:[/] [@click=minute_delete({self.minute.id})]:wastebasket:[/]"
 
-        yield ListItem(Static(item_text))
+        yield Static(item_text)
 
 
 class MinutesList(Widget):
@@ -87,40 +87,24 @@ class MinutesList(Widget):
 
 
 class MinutesScreen(Screen):
-    BINDINGS = [
-        ("q", "quit", "Quit"),
-        ("n", "new_minute", "New Minute"),
-        ("j", "next_minute", "Next minute"),
-        ("k", "previous_minute", "Previous minute"),
-    ]
-
     def compose(self) -> ComposeResult:
         yield Header()
-        yield Static("", id="left-sidebar")
-        with Vertical(id="minutes-screen-content-wrapper"):
-            yield Button("New!", id="new-minute-button", variant="success")
-            yield MinutesList(id="minutes-list")
-        yield Static("", id="right-sidebar")
+        yield Horizontal(
+            Static("", id="foo"),
+            Vertical(
+                Button("New!", id="new-minute", variant="success"),
+                MinutesList(id="minutes-list"),
+                id="minutes-screen-content-wrapper",
+            ),
+            Static("", id="baz"),
+        )
         yield Footer()
 
     def on_button_pressed(self, event: Button.Pressed) -> None:
         self.app.push_screen(MinuteEditScreen(minute_id=None))
 
 
-class MinuteBullet(Widget):
-    def compose(self) -> None:
-        yield Horizontal(
-            Input(placeholder="bullet", id="bullet")
-        )
-
-
 class MinuteEditScreen(Screen):
-
-    BINDINGS = [
-        ("q", "quit", "Quit"),
-        ("a", "add_bullet", "Add bullet"),
-        ("r", "remove_bullet", "Remove bullet"),
-    ]
 
     def __init__(self, minute_id=None):
         super().__init__()
@@ -132,43 +116,43 @@ class MinuteEditScreen(Screen):
         about = self.minute.about if self.minute else ""
 
         yield Header()
-        yield Static("", id="left-sidebar")
-        with Container(id="minute-meta"):
-            yield Input(value=title, placeholder="title", id="title")
-            yield Input(value=attendees, placeholder="attendees", id="attendees")
-            yield Input(value=about, placeholder="about", id="about")
-        yield Container(id="bullets")
-        with Horizontal(id="buttons"):
-            yield Button("Cancel", name="cancel", variant="error")
-            yield Button("Save", name="save", variant="primary")
-        yield Static("", id="right-sidebar")
-
+        yield Horizontal(
+            Static("", id="foo"),
+            Vertical(
+                Input(value=title, placeholder="title", id="title"),
+                Input(value=attendees, placeholder="attendees", id="attendees"),
+                Input(value=about, placeholder="about", id="about"),
+                Horizontal(
+                    Button("Cancel", name="cancel", variant="error"),
+                    Button("Save", name="save", variant="primary"),
+                ),
+            ),
+            Static("", id="baz"),
+        )
         yield Footer()
 
     def on_button_pressed(self, event: Button.Pressed) -> None:
         if event.button.name == "save":
-            self.create_minute()
+            title=self.query_one("#title", Input).value
+            attendees=self.query_one("#attendees", Input).value
+            about=self.query_one("#about", Input).value
+
+            if self.minute:
+                self.minute.title = title
+                self.minute.attendees = attendees
+                self.minute.about = about
+
+                minute = self.minute
+            else:
+                minute = Minute(
+                    title=title,
+                    attendees=attendees,
+                    about=about,
+                )
+
+            minute_save(minute)
+
         self.app.push_screen(MinutesScreen())
-
-    def create_minute(self) -> None:
-        title = self.query_one("#title", Input).value
-        attendees = self.query_one("#attendees", Input).value
-        about = self.query_one("#about", Input).value
-
-        minute = Minute(title=title, attendees=attendees, about=about)
-        minute_save(minute)
-
-    def action_add_bullet(self) -> None:
-        """An action to add new bullet to minute."""
-        bullet = MinuteBullet()
-        self.query_one("#bullets").mount(bullet)
-        bullet.scroll_visible()
-
-    def action_remove_bullet(self) -> None:
-        """An action to remove previous bullet."""
-        bullets = self.query("MinuteBullet")
-        if bullets:
-            bullets.last().remove()
 
 
 class MinuteViewScreen(Screen):
@@ -236,17 +220,6 @@ class MinutesApp(App):
         """Set up the application on startup."""
         self.push_screen("minutes_list")
 
-    def action_new_minute(self) -> None:
-        """An action to create a new minute."""
-        self.app.push_screen(MinuteEditScreen())
-
-    def action_next_minute(self) -> None:
-        """An action to focus next minute."""
-        self.query_one("#minutes-list", MinutesList).focus_next()
-
-    def action_previous_minute(self) -> None:
-        """An action to focus previous minute."""
-        self.query_one("#minutes-list", MinutesList).focus_previous()
     def action_minute_view(self, minute_id) -> None:
         self.push_screen(MinuteViewScreen(minute_id))
 
