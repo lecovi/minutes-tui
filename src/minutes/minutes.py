@@ -7,12 +7,11 @@ from itertools import count
 from typing import Optional
 
 from sqlmodel import Field, Session, SQLModel, create_engine, select
-
 from textual.app import App, ComposeResult
-from textual.containers import Horizontal, Vertical, Container
+from textual.containers import Horizontal, Vertical, Container, Grid
 from textual.screen import Screen
 from textual.widget import Widget
-from textual.widgets import Button, Footer, Header, Static, Input, ListItem 
+from textual.widgets import (Button, Footer, Header, Static, Input, ListItem, MarkdownViewer)
 
 from xdg.BaseDirectory import save_data_path
 
@@ -45,15 +44,34 @@ def minute_save(minute: Minute):
     with Session(engine) as session:
         session.add(minute)
         session.commit()
+        session.refresh(minute)
+
+
+def minute_get(minute_id):
+    if not minute_id:
+        return None
+
+    with Session(engine) as session:
+        minute = session.exec(
+            select(Minute).where(Minute.id == minute_id)
+        ).first()
+
+        return minute
+
+
+def minute_delete(minute):
+    with Session(engine) as session:
+        session.delete(minute)
+        session.commit()
 
 
 class MinuteListItem(Widget):
-    def __init__(self, item):
+    def __init__(self, minute):
         super().__init__()
-        self.item = item
+        self.minute = minute
 
     def compose(self) -> ComposeResult:
-        item_text = f"[b]{self.item.title}[/b] [@click=view_item()]:mag:[/] [@click=edit_item()]:pencil:[/] [@click=delete_item()]:wastebasket:[/]"
+        item_text = f"[b]{self.minute.title}[/b] [@click=minute_view({self.minute.id})]:mag:[/] [@click=minute_edit({self.minute.id})]:pencil:[/] [@click=minute_delete({self.minute.id})]:wastebasket:[/]"
 
         yield ListItem(Static(item_text))
 
@@ -86,7 +104,7 @@ class MinutesScreen(Screen):
         yield Footer()
 
     def on_button_pressed(self, event: Button.Pressed) -> None:
-        self.app.push_screen(MinuteEditScreen())
+        self.app.push_screen(MinuteEditScreen(minute_id=None))
 
 
 class MinuteBullet(Widget):
@@ -104,13 +122,21 @@ class MinuteEditScreen(Screen):
         ("r", "remove_bullet", "Remove bullet"),
     ]
 
+    def __init__(self, minute_id=None):
+        super().__init__()
+        self.minute = minute_get(minute_id)
+
     def compose(self) -> ComposeResult:
+        title = self.minute.title if self.minute else ""
+        attendees = self.minute.attendees if self.minute else ""
+        about = self.minute.about if self.minute else ""
+
         yield Header()
         yield Static("", id="left-sidebar")
         with Container(id="minute-meta"):
-            yield Input(placeholder="title", id="title")
-            yield Input(placeholder="attendees", id="attendees")
-            yield Input(placeholder="about", id="about")
+            yield Input(value=title, placeholder="title", id="title")
+            yield Input(value=attendees, placeholder="attendees", id="attendees")
+            yield Input(value=about, placeholder="about", id="about")
         yield Container(id="bullets")
         with Horizontal(id="buttons"):
             yield Button("Cancel", name="cancel", variant="error")
@@ -145,6 +171,54 @@ class MinuteEditScreen(Screen):
             bullets.last().remove()
 
 
+class MinuteViewScreen(Screen):
+
+    BINDINGS = [
+        ("t", "toggle_table_of_contents", "TOC"),
+        ("b", "back", "Back"),
+        ("f", "forward", "Forward"),
+    ]
+
+    def __init__(self, minute_id):
+        super().__init__()
+        self.minute_id = minute_id
+
+    def compose(self) -> ComposeResult:
+        minute = minute_get(self.minute_id)
+
+        MARKDOWN = f"""
+# {minute.title}
+### Attendees: {minute.attendees}
+## About: {minute.about}
+"""
+        yield Header()
+        yield MarkdownViewer(markdown=MARKDOWN, show_table_of_contents=True)
+        yield Footer()
+
+
+class MinuteDeleteScreen(Screen):
+
+    def __init__(self, minute_id):
+        super().__init__()
+        self.minute_id = minute_id
+
+    def compose(self) -> ComposeResult:
+        yield Grid(
+            Static("Are you sure you want to delete?", id="question"),
+            Button("No", variant="error", id="no"),
+            Button("Yes!", variant="primary", id="yes"),
+            id="dialog",
+        )
+
+    def on_button_pressed(self, event: Button.Pressed) -> None:
+        if event.button.id == "yes":
+            minute = minute_get(self.minute_id)
+            minute_delete(minute)
+            self.app.push_screen(MinutesScreen())
+        else:
+            self.app.pop_screen()
+
+
 class MinutesApp(App):
     """Textual minutes app."""
 
@@ -155,6 +229,7 @@ class MinutesApp(App):
     SCREENS = {
         "minutes_list": MinutesScreen(),
         "minute_edit": MinuteEditScreen(),
+        "minute_view": MinuteViewScreen(minute_id=None),
     }
 
     def on_mount(self) -> None:
@@ -172,6 +247,14 @@ class MinutesApp(App):
     def action_previous_minute(self) -> None:
         """An action to focus previous minute."""
         self.query_one("#minutes-list", MinutesList).focus_previous()
+    def action_minute_view(self, minute_id) -> None:
+        self.push_screen(MinuteViewScreen(minute_id))
+
+    def action_minute_edit(self, minute_id) -> None:
+        self.push_screen(MinuteEditScreen(minute_id))
+
+    def action_minute_delete(self, minute_id) -> None:
+        self.push_screen(MinuteDeleteScreen(minute_id))
 
 
 def run():
