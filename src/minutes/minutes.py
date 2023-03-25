@@ -4,25 +4,47 @@ Like minutes.io, but in the terminal.
 
 from dataclasses import dataclass, field
 from itertools import count
+from typing import Optional
+
+from sqlmodel import Field, Session, SQLModel, create_engine, select
 
 from textual.app import App, ComposeResult
 from textual.containers import Horizontal, Vertical, Container
 from textual.screen import Screen
 from textual.widget import Widget
-from textual.widgets import Button, Footer, Header, Static, Input, ListItem:x
+from textual.widgets import Button, Footer, Header, Static, Input, ListItem 
+
+from xdg.BaseDirectory import save_data_path
 
 
-@dataclass
-class Minute:
-    """Class for keeping track of an item in inventory."""
-
-    id: int = field(default_factory=lambda counter=count(): next(counter), init=False)
+class Minute(SQLModel, table=True):
+    id: Optional[int] = Field(default=None, primary_key=True)
     title: str
     attendees: str
-    about: str
+    about: Optional[str] = None
 
 
-_minutes = []
+def init_database():
+    db_path = save_data_path("minutes") + "minutes.db"
+    engine = create_engine(f"sqlite:///{db_path}")
+    SQLModel.metadata.create_all(engine)
+
+    return engine
+
+
+engine = init_database()
+
+
+def minutes_all():
+    with Session(engine) as session:
+        statement = select(Minute)
+        return [minute for minute in session.exec(statement)]
+
+
+def minute_save(minute: Minute):
+    with Session(engine) as session:
+        session.add(minute)
+        session.commit()
 
 
 class MinuteListItem(Widget):
@@ -38,8 +60,10 @@ class MinuteListItem(Widget):
 
 class MinutesList(Widget):
     def compose(self) -> ComposeResult:
+        minutes = minutes_all()
+
         yield Vertical(
-            *(MinuteListItem(minute) for minute in _minutes),
+            *(MinuteListItem(minute) for minute in minutes),
             id="minutes-screen-content",
         )
 
@@ -105,9 +129,8 @@ class MinuteEditScreen(Screen):
         attendees = self.query_one("#attendees", Input).value
         about = self.query_one("#about", Input).value
 
-        minute = Minute(title, attendees, about)
-
-        _minutes.append(minute)
+        minute = Minute(title=title, attendees=attendees, about=about)
+        minute_save(minute)
 
     def action_add_bullet(self) -> None:
         """An action to add new bullet to minute."""
