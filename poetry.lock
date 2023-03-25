@@ -303,6 +303,14 @@ python-versions = "!=3.0.*,!=3.1.*,!=3.2.*,>=2.7"
 six = ">=1.5"
 
 [[package]]
+name = "pyxdg"
+version = "0.28"
+description = "PyXDG contains implementations of freedesktop.org standards in python."
+category = "main"
+optional = false
+python-versions = "*"
+
+[[package]]
 name = "pyyaml"
 version = "6.0"
 description = "YAML parser and emitter for Python"
@@ -416,7 +424,7 @@ testing = ["pytest (>=6)", "pytest-checkdocs (>=2.4)", "flake8 (<5)", "pytest-co
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.7"
-content-hash = "cc125739671f379d5cb08d1e7055b2168ec68cfad001146fd67c6c2bdeaba343"
+content-hash = "453c4c5638608678f96fe018259c470c57f8ebaa99083f3220e95fc713bf3d4a"
 
 [metadata.files]
 atomicwrites = []
@@ -442,6 +450,7 @@ py = []
 pygments = []
 pytest = []
 python-dateutil = []
+pyxdg = []
 pyyaml = []
 pyyaml-env-tag = []
 rich = []
