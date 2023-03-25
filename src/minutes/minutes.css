@@ -1,18 +1,24 @@
 #minutes-screen-content-wrapper {
-    color: yellow;
-    border: round;
-    height: 80%;
-    margin: 2;
+    height: 100%;
 }
 
-#foo {
+#left-sidebar {
     dock: left;
-    width: 30%;
+    width: 10%;
 }
 
-#baz {
+#right-sidebar {
     dock: right;
-    width: 30%;
+    width: 10%;
+}
+
+Input {
+    height: 1;
+    width: 100%;
+}
+
+MinuteEditScreen {
+    overflow-y: auto;
 }
 
 MinutesScreen Button {
@@ -20,12 +26,38 @@ MinutesScreen Button {
     width: 100%;
 }
 
-MinutesList {
+#new-minute-button {
+    dock: top;
+}
+
+#minutes-list {
+    height: 80%;
     padding: 2;
+    overflow-y: auto;
 }
 
 MinuteListItem {
     height: 2;
+}
+
+.focus {
+    background: green;
+}
+
+#minutes-meta {
+    outline: red;
+    max-height: 4;
+}
+
+#bullets {
+    outline: blue;
+    height: 20;
+    overflow-y: auto;
+}
+
+#buttons {
+    height: 4;
+    align-horizontal: right;
 }
 
 /* The top level dialog (a Container) */
