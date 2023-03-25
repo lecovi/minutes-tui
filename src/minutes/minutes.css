@@ -1,0 +1,29 @@
+#minutes-screen-content-wrapper {
+    color: yellow;
+    border: round;
+    height: 80%;
+    margin: 2;
+}
+
+#foo {
+    dock: left;
+    width: 30%;
+}
+
+#baz {
+    dock: right;
+    width: 30%;
+}
+
+MinutesScreen Button {
+    color: white;
+    width: 100%;
+}
+
+MinutesList {
+    padding: 2;
+}
+
+MinuteListItem {
+    height: 2;
+}
