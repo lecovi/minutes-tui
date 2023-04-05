@@ -197,26 +197,47 @@ class MinuteViewScreen(Screen):
 
 
 class MinuteDeleteScreen(Screen):
+    """Minute delete screen."""
+
+    BINDINGS = [
+        ("y", "yes", "Yes"),
+        ("n", "no", "No"),
+    ]
 
     def __init__(self, minute_id):
         super().__init__()
         self.minute_id = minute_id
 
     def compose(self) -> ComposeResult:
-        yield Grid(
-            Static("Are you sure you want to delete?", id="question"),
-            Button("No", variant="error", id="no"),
-            Button("Yes!", variant="primary", id="yes"),
-            id="dialog",
+        """Compose minute delete screen."""
+        yield Header()
+        yield Container(
+            Static("Are you sure you want to delete?", classes="question"),
+            Horizontal(
+                Button("Yes!", variant="success", id="yes"),
+                Button("No", variant="error", id="no"),
+                classes="buttons",
+            ),
+            id="minute-delete-dialog",
         )
+        yield Footer()
 
     def on_button_pressed(self, event: Button.Pressed) -> None:
+        """Handle yes/no buttons pressed."""
         if event.button.id == "yes":
-            minute = minute_get(self.minute_id)
-            minute_delete(minute)
-            self.app.push_screen(MinutesScreen())
-        else:
-            self.app.pop_screen()
+            self.action_yes()
+        elif event.button.id == "no":
+            self.action_no()
+
+    def action_yes(self) -> None:
+        """An action to accept a minute deletion."""
+        minute = minute_get(self.minute_id)
+        minute_delete(minute)
+        self.app.push_screen(MinutesScreen())
+
+    def action_no(self) -> None:
+        """An action to cancel a minute deletion."""
+        self.app.pop_screen()
 
 
 class MinutesApp(App):
@@ -247,6 +268,7 @@ class MinutesApp(App):
     def action_previous_minute(self) -> None:
         """An action to focus previous minute."""
         self.query_one("#minutes-list", MinutesList).focus_previous()
+
     def action_minute_view(self, minute_id) -> None:
         self.push_screen(MinuteViewScreen(minute_id))
 

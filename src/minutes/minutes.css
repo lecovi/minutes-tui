@@ -60,30 +60,34 @@ MinuteListItem {
     align-horizontal: right;
 }
 
-/* The top level dialog (a Container) */
-#dialog {
-    height: 100%;
-    margin: 4 8;
-    background: $panel;
-    color: $text;
-    border: tall $background;
-    padding: 1 2;
-}
-
 /* The button class */
 Button {
     width: 1fr;
 }
 
+MinuteDeleteScreen {
+    align: center middle;
+}
+
+/* The top level dialog (a Container) */
+#minute-delete-dialog {
+    height: 10;
+    margin: 2 4;
+    background: $panel;
+    color: $text;
+    border: tall $background;
+    padding: 1 4;
+}
+
 /* Matches the question text */
-.question {
+#minute-delete-dialog .question {
     text-style: bold;
     height: 100%;
     content-align: center middle;
 }
 
 /* Matches the button container */
-.buttons {
+#minute-delete-dialog .buttons {
     width: 100%;
     height: auto;
     dock: bottom;
